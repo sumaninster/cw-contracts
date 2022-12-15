@@ -1,5 +1,12 @@
 # Tic Tac Toe Game (Cosmwasm)
 
+## PATH Variables
+export RPC=https://rpc.malaga-420.cosmwasm.com:443
+export NODE=(--node $RPC)
+export CHAIN_ID=malaga-420
+export FEE_DENOM=umlg
+export TXFLAG=($NODE --chain-id $CHAIN_ID --gas-prices 0.25$FEE_DENOM --gas auto --gas-adjustment 1.3)
+
 ## Deploy
 - cargo unit-test
 - RUSTFLAGS='-C link-arg=-s' cargo wasm
@@ -10,6 +17,8 @@
 - CONTRACT=$(wasmd query wasm list-contract-by-code $CODE_ID $NODE --output json | jq -r '.contracts[-1]')
 - wasmd query wasm contract-state all $CONTRACT $NODE
 
+## Deployed Contract (https://rpc.malaga-420.cosmwasm.com:443)
+- CONTRACT=wasm1rcxgwfkxfvw7279lzwp4pe30z9pukkr3u7gpx783aerjva6sjxcqyj3lkv
 
 ## Invite users
 - NEW_INVITE='{"invite":{"name":"Alice"}}'
