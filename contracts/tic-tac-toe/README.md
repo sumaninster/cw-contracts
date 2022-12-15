@@ -1,11 +1,11 @@
 # Tic Tac Toe Game (Cosmwasm)
 
 ## PATH Variables
-export RPC=https://rpc.malaga-420.cosmwasm.com:443
-export NODE=(--node $RPC)
-export CHAIN_ID=malaga-420
-export FEE_DENOM=umlg
-export TXFLAG=($NODE --chain-id $CHAIN_ID --gas-prices 0.25$FEE_DENOM --gas auto --gas-adjustment 1.3)
+- export RPC=https://rpc.malaga-420.cosmwasm.com:443
+- export NODE=(--node $RPC)
+- export CHAIN_ID=malaga-420
+- export FEE_DENOM=umlg
+- export TXFLAG=($NODE --chain-id $CHAIN_ID --gas-prices 0.25$FEE_DENOM --gas auto --gas-adjustment 1.3)
 
 ## Deploy
 - cargo unit-test
