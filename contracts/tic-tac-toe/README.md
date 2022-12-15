@@ -1,6 +1,6 @@
 # Tic Tac Toe Game (Cosmwasm)
 
-## PATH Variables
+## Environment Variables (add to .zshrc or .profile)
 - export RPC=https://rpc.malaga-420.cosmwasm.com:443
 - export NODE=(--node $RPC)
 - export CHAIN_ID=malaga-420
