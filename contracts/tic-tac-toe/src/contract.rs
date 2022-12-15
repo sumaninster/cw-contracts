@@ -36,7 +36,7 @@ pub fn execute(
         ExecuteMsg::Play { position_x, position_y } => execute_play(deps, env, info, position_x, position_y),
     }
 }
-
+///Process transaction for new game invites
 pub fn execute_invite(
     deps: DepsMut,
     _env: Env,
@@ -62,7 +62,7 @@ pub fn execute_invite(
     OPEN_INVITES.save(deps.storage, &OpenInvites{ invites })?;
     Ok(Response::default())
 }
-
+///Process transaction for accepted game invites
 pub fn execute_accepted(
     deps: DepsMut,
     _env: Env,
@@ -106,7 +106,7 @@ pub fn execute_accepted(
     }
     Ok(Response::default())
 }
-
+///Process transaction for game moves from each player
 pub fn execute_play(
     deps: DepsMut,
     _env: Env,
@@ -166,7 +166,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::OpenInvites {} => query_open_invites(deps, env),
     }
 }
-
+///Query for game status: Is game over or in progress, winner name or draw
 fn query_game_status(deps: Deps, _env: Env, game_id: GameId) -> StdResult<Binary> {
     let (status, winner) = match GAME_SESSION.may_load(deps.storage, game_id)? {
         Some(record) => {
@@ -186,19 +186,19 @@ fn query_game_status(deps: Deps, _env: Env, game_id: GameId) -> StdResult<Binary
     let resp = GameStatusResponse { game_id, status, winner };
     to_binary(&resp)
 }
-
+///Query for board status: get all the cell positions
 fn query_board_status(deps: Deps, _env: Env, game_id: GameId) -> StdResult<Binary> {
     let board = GAME_SESSION.load(deps.storage, game_id)?.game.board;
     let resp = BoardStatusResponse { board };
     to_binary(&resp)
 }
-
+///Query for open invites: get list of all open game ids
 fn query_open_invites(deps: Deps, _env: Env) -> StdResult<Binary> {
     let invites = OPEN_INVITES.load(deps.storage)?.invites;
     let resp = OpenInvitesResponse { invites };
     to_binary(&resp)
 }
-
+///Find the first player: The roles of “X” and “O” are decided as follows. The user's public keys are concatenated and the result is hashed. If the first bit of the output is 0, then the game's initiator (whoever posted the invitation) plays "O" and the second player plays "X" and vice versa. “X” has the first move.
 fn get_first_player(game_invite: &mut GameInvite) -> Result<PlayerDetails, StdError> {
     let keys = game_invite.invite_player.addr.to_string() + game_invite.accepted_player.as_ref().unwrap().addr.as_str();
     let hash = calculate_hash(keys);
@@ -218,26 +218,25 @@ fn get_first_player(game_invite: &mut GameInvite) -> Result<PlayerDetails, StdEr
     }
     Ok(first_player)
 }
-
+///Calculate has of a string
 fn calculate_hash(t: String) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
 }
-
+///Check if first bit is zero
 fn is_first_bit_zero(num: u64) -> bool {
     let res = num & (1<<0);
     res.eq(&0)
 }
-
+///Check if the char in name is invalid (space is include for names with surname)
 fn invalid_char(c: char) -> bool {
     let is_valid =
         c.is_ascii_digit() || c.is_ascii_lowercase() || c.is_ascii_uppercase() || (c == '.' || c == '-' || c == '_' || c == ' ');
     !is_valid
 }
-
 /// validate_name returns an error if the name is invalid
-/// (we require 3-64 lowercase or uppercase ascii letters, numbers, or . - _)
+/// (we require 3-64 lowercase or uppercase ascii letters, numbers, apace or . - _)
 fn validate_name(name: &str) -> Result<(), ContractError> {
     let length = name.len() as u64;
     if (name.len() as u64) < MIN_NAME_LENGTH {

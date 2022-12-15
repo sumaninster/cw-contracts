@@ -3,6 +3,7 @@ use thiserror::Error;
 use crate::state::GameId;
 
 #[derive(Error, Debug)]
+///All contract error messages
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),

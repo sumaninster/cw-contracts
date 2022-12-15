@@ -5,6 +5,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 pub struct InstantiateMsg {}
 
 #[cw_serde]
+///Valid transactions: Invite, Accepted, Play
 pub enum ExecuteMsg {
     Invite { name: String },
     Accepted { name: String, game_id: GameId },
@@ -13,6 +14,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+///Valid Queries: GameStatus, BoardStatus, OpenInvites
 pub enum QueryMsg {
     #[returns(GameStatusResponse)]
     GameStatus { game_id: GameId },
@@ -23,6 +25,7 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
+///Response for game status query
 pub struct GameStatusResponse {
     pub game_id: GameId,
     pub status: String,
@@ -30,11 +33,13 @@ pub struct GameStatusResponse {
 }
 
 #[cw_serde]
+///Response for board status query
 pub struct BoardStatusResponse {
     pub board: Vec<Vec<Option<Player>>>,
 }
 
 #[cw_serde]
+///Response for open game ids query
 pub struct OpenInvitesResponse {
     pub invites: Vec<GameId>,
 }
