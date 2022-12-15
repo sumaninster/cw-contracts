@@ -25,6 +25,9 @@ pub enum ContractError {
     #[error("Invalid Move")]
     InvalidMove { game_id: GameId},
 
+    #[error("Game Over")]
+    GameOver { game_id: GameId, status: String, winner: String},
+
     #[error("Name too short (length {length} min_length {min_length})")]
     NameTooShort { length: u64, min_length: u64 },
 

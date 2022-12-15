@@ -121,7 +121,11 @@ pub fn execute_play(
     let winner = GAME_SESSION.update(deps.storage, game_id, |record| -> Result<GameSession, ContractError> {
         if let Some(mut record) = record {
             if record.game_over {
-                return Ok(record);
+                let winner = match record.winner {
+                    Some(w) => w.name,
+                    None => "None, Draw".to_string(),
+                };
+                return Err(ContractError::GameOver { game_id, status: "Game Over".to_string(), winner });
             } else if info.sender != record.game.current_player.addr {
                 return Err(ContractError::ItsNotYourTurn { game_id });
             } else if !record.players.accepted {

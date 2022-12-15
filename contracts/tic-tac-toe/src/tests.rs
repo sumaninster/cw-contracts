@@ -256,6 +256,78 @@ mod test_module {
     }
 
     #[test]
+    fn play_row_win_board_status_and_query_works() {
+        let mut deps = mock_dependencies();
+        mock_init(deps.as_mut());
+        mock_invite(deps.as_mut(), "Alice".to_string());
+        assert_open_invites(deps.as_ref(), OpenInvitesResponse{ invites: vec![1] });
+        mock_accepted_invite(deps.as_mut(), "Bob".to_string(), 1);
+        assert_game_status(deps.as_ref(), 1, GameStatusResponse{
+            game_id: 1,
+            status: "Game in progress".to_string(),
+            winner: "None".to_string()
+        });
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 0);
+        mock_play(deps.as_mut(), "Bob".to_string(), 1, 2);
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 1);
+        mock_play(deps.as_mut(), "Bob".to_string(), 1, 0);
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 2);
+        assert_game_status(deps.as_ref(), 1, GameStatusResponse{
+            game_id: 1,
+            status: "Game Over".to_string(),
+            winner: "Alice".to_string()
+        });
+        assert_board_status(deps.as_ref(), 1, BoardStatusResponse{
+            board: vec![
+                vec![Some(Player::X),Some(Player::X),Some(Player::X)],
+                vec![Some(Player::O), None, Some(Player::O)],
+                vec![None, None, None]]
+        });
+    }
+
+    #[test]
+    fn play_after_row_win_with_error_game_over_fails() {
+        let mut deps = mock_dependencies();
+        mock_init(deps.as_mut());
+        mock_invite(deps.as_mut(), "Alice".to_string());
+        assert_open_invites(deps.as_ref(), OpenInvitesResponse{ invites: vec![1] });
+        mock_accepted_invite(deps.as_mut(), "Bob".to_string(), 1);
+        assert_game_status(deps.as_ref(), 1, GameStatusResponse{
+            game_id: 1,
+            status: "Game in progress".to_string(),
+            winner: "None".to_string()
+        });
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 0);
+        mock_play(deps.as_mut(), "Bob".to_string(), 1, 0);
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 1);
+        mock_play(deps.as_mut(), "Bob".to_string(), 1, 1);
+        mock_play(deps.as_mut(), "Alice".to_string(), 0, 2);
+        assert_game_status(deps.as_ref(), 1, GameStatusResponse{
+            game_id: 1,
+            status: "Game Over".to_string(),
+            winner: "Alice".to_string()
+        });
+        assert_board_status(deps.as_ref(), 1, BoardStatusResponse{
+            board: vec![
+                vec![Some(Player::X),Some(Player::X),Some(Player::X)],
+                vec![Some(Player::O), Some(Player::O), None],
+                vec![None, None, None]]
+        });
+        let info = mock_info("Bob", &[]);
+        let msg = ExecuteMsg::Play {position_x: 1, position_y: 1};
+        let res = execute(deps.as_mut(), mock_env(), info, msg);
+        match res {
+            Ok(_) => panic!("Must return error"),
+            Err(ContractError::GameOver { game_id, status, winner}) => {
+                assert_eq!(game_id, 1);
+                assert_eq!(status, "Game Over");
+                assert_eq!(winner, "Alice");
+            }
+            Err(_) => panic!("Unknown error"),
+        }
+    }
+
+    #[test]
     fn play_col_win_and_query_works() {
         let mut deps = mock_dependencies();
         mock_init(deps.as_mut());
