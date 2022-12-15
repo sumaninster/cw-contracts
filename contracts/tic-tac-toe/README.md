@@ -1,8 +1,8 @@
-# Tic Tac Toe Game
+# Tic Tac Toe Game (Cosmwasm)
 
 ## Invite users
-NEW_INVITE='{"invite":{"name":"Alice"}}'
-wasmd tx wasm execute $CONTRACT "NEW_INVITE" --amount 100umlg --from wallet $TXFLAG -y
+- NEW_INVITE='{"invite":{"name":"Alice"}}'
+- wasmd tx wasm execute $CONTRACT "NEW_INVITE" --amount 100umlg --from wallet $TXFLAG -y
 
 ## Accept invites
 - INVITE_ACCEPTED='{"accepted":{"name":"Bob", "game_id":"1"}}'
