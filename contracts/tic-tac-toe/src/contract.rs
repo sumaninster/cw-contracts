@@ -5,7 +5,7 @@ use std::{
 };
 use crate::error::ContractError;
 use crate::msg::{BoardStatusResponse, ExecuteMsg, GameStatusResponse, InstantiateMsg, OpenInvitesResponse, QueryMsg};
-use crate::state::{GAME_SESSION, GAME_INVITES, GAME_ID_INC, GameId, GameInvite, GameSession, Game, Player, PlayerDetails, USER_SESSION, OPEN_INVITES, OpenInvites, FIRST_PLAYER};
+use crate::state::{GAME_SESSION, GAME_INVITES, GAME_ID_INC, GameId, GameInvite, GameSession, Game, Player, PlayerDetails, USER_SESSION, OPEN_INVITES, OpenInvites, FIRST_PLAYER, GameStatus};
 
 const MIN_NAME_LENGTH: u64 = 3;
 const MAX_NAME_LENGTH: u64 = 64;
@@ -52,7 +52,6 @@ pub fn execute_invite(
         name,
         player: None
     }, accepted_player: None,
-        accepted: false,
     };
     GAME_INVITES.save(deps.storage, game_id, &new_invite)?;
     USER_SESSION.save(deps.storage, info.sender, &game_id)?;
@@ -81,19 +80,17 @@ pub fn execute_accepted(
                 name,
                 player: None
             });
-            record.accepted = true;
             Ok(record)
         } else {
             Err(ContractError::GameIdNotFound { game_id })
         }
     })?;
-    if invite.accepted {
+    if invite.accepted_player != None {
         let first_player = get_first_player(&mut invite)?;
         let new_game = GameSession {
             game: Game::new(first_player),
             players: invite.clone(),
-            winner: None,
-            game_over: false
+            status: GameStatus::Playing
         };
         GAME_SESSION.save(deps.storage, game_id, &new_game)?;
         USER_SESSION.save(deps.storage, info.sender, &game_id)?;
@@ -118,26 +115,26 @@ pub fn execute_play(
         Some(g) => g.clone(),
         None => return Err(ContractError::YourSessionNotFound {})
     };
-    let winner = GAME_SESSION.update(deps.storage, game_id, |record| -> Result<GameSession, ContractError> {
+    let record = GAME_SESSION.update(deps.storage, game_id, |record| -> Result<GameSession, ContractError> {
         if let Some(mut record) = record {
-            if record.game_over {
-                let winner = match record.winner {
-                    Some(w) => w.name,
-                    None => "None, Draw".to_string(),
+            if record.status != GameStatus::Playing {
+                match record.status {
+                    GameStatus::Playing => {}
+                    GameStatus::Draw => {
+                        return Err(ContractError::GameOver { game_id, status: "Game Over".to_string(), winner: "None, Draw".to_string() });
+                    }
+                    GameStatus::Winner(w) => {
+                        return Err(ContractError::GameOver { game_id, status: "Game Over".to_string(), winner: w.name });
+                    }
                 };
-                return Err(ContractError::GameOver { game_id, status: "Game Over".to_string(), winner });
             } else if info.sender != record.game.current_player.addr {
                 return Err(ContractError::ItsNotYourTurn { game_id });
-            } else if !record.players.accepted {
+            } else if record.players.accepted_player == None {
                 return Err(ContractError::InviteNotAcceptedYet { game_id });
             } else if record.game.is_valid_move((position_x, position_y)) {
                 record.game.board[position_x as usize][position_y as usize] = Some(record.game.current_player.player.unwrap());
                 record.game.next_player(&record.players);
-                let (winner, over) = record.game.is_game_over(&record.players);
-                if over {
-                    record.winner = winner.clone();
-                    record.game_over = true;
-                }
+                record.status = record.game.is_game_over(&record.players);
             } else {
                 return Err(ContractError::InvalidMove { game_id })
             }
@@ -147,10 +144,17 @@ pub fn execute_play(
         }
     })?;
     let mut res = Response::default();
-    if winner.game_over {
-        let winner = match winner.winner {
-            Some(w) => w.name,
-            None => "None, Draw".to_string(),
+    if record.status != GameStatus::Playing {
+        let winner = match record.status {
+            GameStatus::Playing => {
+                "Playing".to_string()
+            }
+            GameStatus::Draw => {
+                "None, Draw".to_string()
+            }
+            GameStatus::Winner(w) => {
+                w.name
+            }
         };
         res = res.add_attribute("status", "Game Over");
         res = res.add_attribute("winner", winner);
@@ -170,15 +174,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 fn query_game_status(deps: Deps, _env: Env, game_id: GameId) -> StdResult<Binary> {
     let (status, winner) = match GAME_SESSION.may_load(deps.storage, game_id)? {
         Some(record) => {
-            if record.game_over {
-                let status = "Game Over".to_string();
-                let winner = match record.winner {
-                    Some(w) => w.name,
-                    None => "None, Draw".to_string(),
-                };
-                (status, winner)
-            } else {
-                ("Game in progress".to_string(), "None".to_string())
+            match record.status {
+                GameStatus::Draw => {
+                    ("Game Over".to_string(), "None, Draw".to_string())
+                },
+                GameStatus::Playing => {
+                    ("Game in progress".to_string(), "None".to_string())
+                },
+                GameStatus::Winner(w) => {
+                    ("Game Over".to_string(), w.name)
+                },
             }
         },
         None => ("Game not found".to_string(), "None".to_string()),

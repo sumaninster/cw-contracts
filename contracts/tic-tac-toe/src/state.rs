@@ -30,7 +30,14 @@ pub struct Game {
 pub struct GameInvite {
     pub invite_player: PlayerDetails,
     pub accepted_player: Option<PlayerDetails>,
-    pub accepted: bool,
+}
+
+#[cw_serde]
+///Stores game status: current situation of the game
+pub enum GameStatus {
+    Playing,
+    Draw,
+    Winner(PlayerDetails)
 }
 
 #[cw_serde]
@@ -38,8 +45,7 @@ pub struct GameInvite {
 pub struct GameSession {
     pub game: Game,
     pub players: GameInvite,
-    pub winner: Option<PlayerDetails>,
-    pub game_over: bool,
+    pub status: GameStatus,
 }
 
 #[cw_serde]
@@ -83,20 +89,20 @@ impl Game {
         }
     }
     ///Checks if the game is over and returns winner (None, if there is no winner)
-    pub fn is_game_over(&self, players: &GameInvite) -> (Option<PlayerDetails>, bool) {
+    pub fn is_game_over(&self, players: &GameInvite) -> GameStatus {
         match self.get_winner() {
             Some(winner) => {
                 if winner == players.invite_player.player.unwrap() {
-                    (Some(players.invite_player.clone()), true)
+                    GameStatus::Winner(players.invite_player.clone())
                 } else {
-                    (Some(players.accepted_player.clone().unwrap()), true)
+                    GameStatus::Winner(players.accepted_player.clone().unwrap())
                 }
             },
             None => {
                 if self.is_ended() {
-                    (None, true)
+                    GameStatus::Draw
                 } else {
-                    (None, false)
+                    GameStatus::Playing
                 }
             }
         }
